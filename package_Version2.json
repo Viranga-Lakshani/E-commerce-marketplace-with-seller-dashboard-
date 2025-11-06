@@ -1,0 +1,8 @@
+{
+  "name": "ecommerce-marketplace-root",
+  "private": true,
+  "workspaces": [
+    "server",
+    "web"
+  ]
+}
