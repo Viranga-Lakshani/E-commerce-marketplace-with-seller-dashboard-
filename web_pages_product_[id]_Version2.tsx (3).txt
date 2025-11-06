@@ -1,0 +1,50 @@
+import { useRouter } from "next/router";
+import useSWR from "swr";
+import axios from "axios";
+import Link from "next/link";
+import { useState } from "react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const fetcher = (url: string) => axios.get(url).then((r) => r.data);
+
+export default function ProductPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const { data, error } = useSWR(id ? `${API}/api/products/${id}` : null, fetcher);
+  const [qty, setQty] = useState(1);
+
+  if (error) return <div>Error</div>;
+  if (!data) return <div>Loading...</div>;
+
+  const p = data;
+
+  const buy = async () => {
+    // Demo checkout: create a buyer, then create order
+    const buyerResp = await axios.post(`${API}/api/login`, { name: "guest-buyer" }).then((r) => r.data.user);
+    const order = await axios.post(`${API}/api/orders`, {
+      buyerId: buyerResp.id,
+      items: [{ productId: p.id, quantity: qty }],
+    });
+    alert("Order placed (demo): " + order.data.id);
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <Link href="/"><a>Back</a></Link>
+      <h1>{p.title}</h1>
+      <img src={p.imageUrl || "/placeholder.png"} alt={p.title} style={{ maxWidth: 400 }} />
+      <p>{p.description}</p>
+      <p>
+        Price: {(p.priceCents / 100).toFixed(2)} {p.currency}
+      </p>
+
+      <div>
+        <label>Qty:</label>
+        <input type="number" value={qty} min={1} onChange={(e) => setQty(Number(e.target.value))} />
+      </div>
+      <button onClick={buy} style={{ marginTop: 12 }}>
+        Buy (demo)
+      </button>
+    </div>
+  );
+}

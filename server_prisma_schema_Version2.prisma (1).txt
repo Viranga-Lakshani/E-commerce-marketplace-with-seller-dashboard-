@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Change to "postgresql" in production and set DATABASE_URL in env
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+  password  String?  // optional for demo authless flows
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+
+  Seller    Seller?
+  Orders    Order[]  @relation("userOrders")
+}
+
+model Seller {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  shopName  String
+  products  Product[]
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  seller      Seller   @relation(fields: [sellerId], references: [id])
+  sellerId    String
+  title       String
+  description String?
+  priceCents  Int
+  currency    String   @default("USD")
+  inventory   Int      @default(0)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      OrderItem[]
+}
+
+model Order {
+  id         String     @id @default(uuid())
+  buyer      User       @relation("userOrders", fields: [buyerId], references: [id])
+  buyerId    String
+  totalCents Int
+  currency   String     @default("USD")
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime   @default(now())
+  items      OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  unitCents Int
+}
+
+enum Role {
+  CUSTOMER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+}
